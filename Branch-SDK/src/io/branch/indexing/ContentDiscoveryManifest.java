@@ -39,6 +39,9 @@ public class ContentDiscoveryManifest {
     /* default scrape repeat delay */
     private int discoveryRepeatTime_ = 0;
 
+    /* boolean for repeat delay */
+    private boolean isRepeatTimeSet = false;
+
     public static final String MANIFEST_VERSION_KEY = "mv";
     public static final String PACKAGE_NAME_KEY = "pn";
     public static final String HASH_MODE_KEY = "h";
@@ -159,7 +162,12 @@ public class ContentDiscoveryManifest {
     }
 
     public int getDiscoveryRepeatTime() {
-        return discoveryRepeatTime_;
+        return ( isRepeatTimeSet ? discoveryRepeatTime_ : -1 );
+    }
+
+    private void setDiscoveryRepeatTime(int discoveryRepeatTime) {
+        discoveryRepeatTime_ = discoveryRepeatTime;
+        isRepeatTimeSet = discoveryRepeatTime_ != -1;
     }
 
     public String getManifestVersion() {
@@ -172,7 +180,6 @@ public class ContentDiscoveryManifest {
     class CDPathProperties {
         final JSONObject pathInfo_;
         private boolean isClearText_;
-        private boolean DRTEnabled = false;
 
         CDPathProperties(JSONObject pathInfo) {
             pathInfo_ = pathInfo;
@@ -186,8 +193,7 @@ public class ContentDiscoveryManifest {
 
             try {
                 if (pathInfo.has(DISCOVERY_REPEAT_TIME)) {
-                    discoveryRepeatTime_ = Integer.valueOf(pathInfo.getString(DISCOVERY_REPEAT_TIME));
-                    DRTEnabled = true;
+                    setDiscoveryRepeatTime(Integer.valueOf(pathInfo.getString(DISCOVERY_REPEAT_TIME)));
                 }
             } catch (JSONException e) {
                 e.printStackTrace();

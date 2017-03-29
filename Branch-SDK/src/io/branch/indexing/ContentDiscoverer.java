@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Handler;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -74,7 +73,6 @@ public class ContentDiscoverer {
     //make discoverContent a runnable, kill runnable onActivtyStopped
 
     public void discoverContent(final Activity activity, final String referredUrl) {
-        Log.d("BranchSDK", "discoverContent func");
         cdManifest_ = ContentDiscoveryManifest.getInstance(activity);
         referredUrl_ = referredUrl;
 
@@ -92,13 +90,11 @@ public class ContentDiscoverer {
     }
 
     public void onActivityStopped(Activity activity) {
-        Log.d("BranchSDK", "onActivityStopped");
         if (lastActivityReference_ != null && lastActivityReference_.get() != null
                 && lastActivityReference_.get().getClass().getName().equals(activity.getClass().getName())) {
             handler_.removeCallbacks(readContentRunnable);
             lastActivityReference_ = null;
         }
-        handler_.removeCallbacks(readContentRunnable);
         updateLastViewTimeStampIfNeeded();
     }
 
@@ -129,7 +125,6 @@ public class ContentDiscoverer {
     private Runnable readContentRunnable = new Runnable() {
         @Override
         public void run() {
-            Log.d("BranchSDK", "discoverContent runnable");
             try {
                 if (cdManifest_.isCDEnabled() && lastActivityReference_ != null && lastActivityReference_.get() != null) {
                     Activity activity = lastActivityReference_.get();
@@ -171,14 +166,17 @@ public class ContentDiscoverer {
 
                         // Cache the analytics data for future use
                         PrefHelper.getInstance(activity).saveBranchAnalyticsData(contentEvent_);
-                        lastActivityReference_ = null;
+                        if ( cdManifest_.getDiscoveryRepeatTime() != -1 ) {
+                            handler_.postDelayed(readContentRunnable, cdManifest_.getDiscoveryRepeatTime());
+                        }
+                        else {
+                            lastActivityReference_ = null;
+                        }
                     }
                 }
 
             } catch (JSONException ignore) {
             }
-
-            handler_.postDelayed(readContentRunnable, cdManifest_.getDiscoveryRepeatTime());
         }
     };
 
