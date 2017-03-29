@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Handler;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -70,7 +71,10 @@ public class ContentDiscoverer {
 
     //------------------------- Public methods---------------------------------//
 
-    public void discoverContent(final Activity activity, String referredUrl) {
+    //make discoverContent a runnable, kill runnable onActivtyStopped
+
+    public void discoverContent(final Activity activity, final String referredUrl) {
+        Log.d("BranchSDK", "discoverContent func");
         cdManifest_ = ContentDiscoveryManifest.getInstance(activity);
         referredUrl_ = referredUrl;
 
@@ -87,13 +91,14 @@ public class ContentDiscoverer {
         }
     }
 
-
     public void onActivityStopped(Activity activity) {
+        Log.d("BranchSDK", "onActivityStopped");
         if (lastActivityReference_ != null && lastActivityReference_.get() != null
                 && lastActivityReference_.get().getClass().getName().equals(activity.getClass().getName())) {
             handler_.removeCallbacks(readContentRunnable);
             lastActivityReference_ = null;
         }
+        handler_.removeCallbacks(readContentRunnable);
         updateLastViewTimeStampIfNeeded();
     }
 
@@ -124,7 +129,7 @@ public class ContentDiscoverer {
     private Runnable readContentRunnable = new Runnable() {
         @Override
         public void run() {
-
+            Log.d("BranchSDK", "discoverContent runnable");
             try {
                 if (cdManifest_.isCDEnabled() && lastActivityReference_ != null && lastActivityReference_.get() != null) {
                     Activity activity = lastActivityReference_.get();
@@ -136,8 +141,8 @@ public class ContentDiscoverer {
                     String viewName = "/" + activity.getClass().getSimpleName();
                     contentEvent_.put(VIEW_KEY, viewName);
 
-
-                    ViewGroup rootView = (ViewGroup) activity.findViewById(android.R.id.content);
+                    //ViewGroup rootView = (ViewGroup) activity.findViewById(android.R.id.content);
+                    ViewGroup rootView = (ViewGroup) activity.getWindow().getDecorView().getRootView();
 
                     if (rootView != null) {
                         ContentDiscoveryManifest.CDPathProperties cdPathProperties = cdManifest_.getCDPathProperties(activity);
@@ -172,6 +177,8 @@ public class ContentDiscoverer {
 
             } catch (JSONException ignore) {
             }
+
+            handler_.postDelayed(readContentRunnable, cdManifest_.getDiscoveryRepeatTime());
         }
     };
 

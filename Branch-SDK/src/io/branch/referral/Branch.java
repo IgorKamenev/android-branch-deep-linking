@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.Semaphore;
@@ -2186,7 +2187,6 @@ public class Branch implements BranchViewHandler.IBranchViewEvents, SystemObserv
     private class BranchActivityLifeCycleObserver implements Application.ActivityLifecycleCallbacks {
         private int activityCnt_ = 0; //Keep the count of live  activities.
 
-
         @Override
         public void onActivityCreated(Activity activity, Bundle bundle) {
             intentState_ = handleDelayedNewIntents_ ? INTENT_STATE.PENDING : INTENT_STATE.READY;
@@ -2196,15 +2196,10 @@ public class Branch implements BranchViewHandler.IBranchViewEvents, SystemObserv
         }
 
         @Override
-        public void onActivityStarted(Activity activity) {
+        public void onActivityStarted(final Activity activity) {
             intentState_ = handleDelayedNewIntents_ ? INTENT_STATE.PENDING : INTENT_STATE.READY;
+
             // If configured on dashboard, trigger content discovery runnable
-            if (initState_ == SESSION_STATE.INITIALISED) {
-                try {
-                    ContentDiscoverer.getInstance().discoverContent(activity, sessionReferredLink_);
-                } catch (Exception ignore) {
-                }
-            }
             if (activityCnt_ < 1) { // Check if this is the first Activity.If so start a session.
                 initState_ = SESSION_STATE.UNINITIALISED;
                 // Check if debug mode is set in manifest. If so enable debug.
@@ -2221,7 +2216,7 @@ public class Branch implements BranchViewHandler.IBranchViewEvents, SystemObserv
         }
 
         @Override
-        public void onActivityResumed(Activity activity) {
+        public void onActivityResumed(final Activity activity) {
             // Need to check here again for session restart request in case the intent is created while the activity is already running
             if (checkIntentForSessionRestart(activity.getIntent())) {
                 initState_ = SESSION_STATE.UNINITIALISED;
@@ -2262,7 +2257,6 @@ public class Branch implements BranchViewHandler.IBranchViewEvents, SystemObserv
             }
             BranchViewHandler.getInstance().onCurrentActivityDestroyed(activity);
         }
-
     }
 
     private void startSession(Activity activity) {

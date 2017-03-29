@@ -15,8 +15,7 @@ import org.json.JSONObject;
  * The content discovery manifest is the instruction set for how the Branch SDK will *optionally* and automatically discover content
  * within your app. It parses the configuration from the server, which will tell the client whether it's eligible for content discovery.
  * This manifest is then used to inform the ContentDiscover class's behavior.
- * <p/>
- * Note that this behavior can be controlled from the dashboard.
+ * * Note that this behavior can be controlled from the dashboard.
  * </p>
  */
 public class ContentDiscoveryManifest {
@@ -37,6 +36,8 @@ public class ContentDiscoveryManifest {
     /* Json Array for the content path object and the filtered views for this application */
     private JSONArray contentPaths_;
 
+    /* default scrape repeat delay */
+    private int discoveryRepeatTime_ = 0;
 
     public static final String MANIFEST_VERSION_KEY = "mv";
     public static final String PACKAGE_NAME_KEY = "pn";
@@ -47,6 +48,7 @@ public class ContentDiscoveryManifest {
     private static final String MAX_TEXT_LEN_KEY = "mtl";
     private static final String MAX_VIEW_HISTORY_LENGTH = "mhl";
     private static final String MAX_PACKET_SIZE_KEY = "mps";
+    private static final String DISCOVERY_REPEAT_TIME = "drt";
     public static final String CONTENT_DISCOVER_KEY = "cd";
 
     private SharedPreferences sharedPref;
@@ -144,7 +146,6 @@ public class ContentDiscoveryManifest {
         return isCDEnabled_;
     }
 
-
     public int getMaxTextLen() {
         return maxTextLen_;
     }
@@ -157,17 +158,21 @@ public class ContentDiscoveryManifest {
         return maxViewHistoryLength_;
     }
 
+    public int getDiscoveryRepeatTime() {
+        return discoveryRepeatTime_;
+    }
+
     public String getManifestVersion() {
         if (TextUtils.isEmpty(manifestVersion_)) {
             return "-1";
         }
         return manifestVersion_;
-
     }
 
     class CDPathProperties {
         final JSONObject pathInfo_;
         private boolean isClearText_;
+        private boolean DRTEnabled = false;
 
         CDPathProperties(JSONObject pathInfo) {
             pathInfo_ = pathInfo;
@@ -178,9 +183,18 @@ public class ContentDiscoveryManifest {
                     e.printStackTrace();
                 }
             }
+
+            try {
+                if (pathInfo.has(DISCOVERY_REPEAT_TIME)) {
+                    discoveryRepeatTime_ = Integer.valueOf(pathInfo.getString(DISCOVERY_REPEAT_TIME));
+                    DRTEnabled = true;
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
         }
 
-        public JSONArray getFilteredElements() {
+        JSONArray getFilteredElements() {
             JSONArray elementArray = null;
             if (pathInfo_.has(FILTERED_KEYS)) {
                 try {
@@ -192,14 +206,13 @@ public class ContentDiscoveryManifest {
             return elementArray;
         }
 
-        public boolean isClearTextRequested() {
+        boolean isClearTextRequested() {
             return isClearText_;
         }
 
-        public boolean isSkipContentDiscovery() {
+        boolean isSkipContentDiscovery() {
             JSONArray filteredElements = getFilteredElements();
             return filteredElements != null && filteredElements.length() == 0;
         }
-
     }
 }
